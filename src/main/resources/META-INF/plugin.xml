@@ -12,7 +12,7 @@
                 implementationClass="com.github.gitofleonardo.simplesqlitebrowser.sqlite.SqliteFileType"
                 fieldName="INSTANCE"
                 language="sqlite"
-                extensions="db"/>
+                extensions="db;sqlite"/>
         <fileEditorProvider implementation="com.github.gitofleonardo.simplesqlitebrowser.provider.SqliteEditorProvider"/>
     </extensions>
 </idea-plugin>
