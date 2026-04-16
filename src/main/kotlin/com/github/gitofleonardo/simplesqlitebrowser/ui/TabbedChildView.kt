@@ -7,4 +7,7 @@ import javax.swing.JPanel
 abstract class TabbedChildView : JBPanel<TabbedChildView>() {
     abstract val title: String
     abstract val icon: Icon?
+
+    /** Called when [com.github.gitofleonardo.simplesqlitebrowser.provider.SqliteEditor] is disposed. */
+    open fun dispose() {}
 }

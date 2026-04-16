@@ -19,4 +19,10 @@ class SqliteBrowserMainWindow(dbFile: VirtualFile) : JPanel(BorderLayout()) {
 
         add(tabbedPane)
     }
+
+    fun dispose() {
+        for (child in tabbedChildViews) {
+            child.dispose()
+        }
+    }
 }

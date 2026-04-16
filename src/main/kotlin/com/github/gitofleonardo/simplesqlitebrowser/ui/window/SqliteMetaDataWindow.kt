@@ -3,8 +3,10 @@ package com.github.gitofleonardo.simplesqlitebrowser.ui.window
 import com.github.gitofleonardo.simplesqlitebrowser.data.SqliteMetadata
 import com.github.gitofleonardo.simplesqlitebrowser.tools.DatabaseTreeCellRenderer
 import com.github.gitofleonardo.simplesqlitebrowser.tools.DatabaseTreeModel
+import com.github.gitofleonardo.simplesqlitebrowser.PLUGIN_DISPLAY_NAME
 import com.github.gitofleonardo.simplesqlitebrowser.ui.TabbedChildView
 import com.github.gitofleonardo.simplesqlitebrowser.ui.viewmodel.MetadataViewModel
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTreeTable
@@ -37,6 +39,11 @@ class SqliteMetaDataWindow(private val file: VirtualFile) : TabbedChildView() {
         viewModel.loadMetaData(file)
     }
 
+    override fun dispose() {
+        viewModel.dispose()
+        super.dispose()
+    }
+
     private fun initObserve() {
         viewModel.metadata.observe {
             if (!it.isValidSqliteDatabase) {
@@ -44,6 +51,12 @@ class SqliteMetaDataWindow(private val file: VirtualFile) : TabbedChildView() {
             }
             treeModel = DatabaseTreeModel(it)
             rootTree.model = treeModel
+        }
+        viewModel.loadError.observe { message ->
+            if (message.isEmpty()) {
+                return@observe
+            }
+            Messages.showErrorDialog(this, message, PLUGIN_DISPLAY_NAME)
         }
     }
 

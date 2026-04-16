@@ -9,6 +9,7 @@ import com.github.gitofleonardo.simplesqlitebrowser.ui.TabbedChildView
 import com.github.gitofleonardo.simplesqlitebrowser.ui.view.BeeplessFormattedTextView
 import com.github.gitofleonardo.simplesqlitebrowser.ui.viewmodel.TableViewModel
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
@@ -118,6 +119,11 @@ class SqliteTablesWindow(private val dbFile: VirtualFile) : TabbedChildView(), I
         viewModel.loadTables()
     }
 
+    override fun dispose() {
+        viewModel.dispose()
+        super.dispose()
+    }
+
     private fun initListeners() {
         tableComboBox.addOnItemChangeListener {
             filterHeaderCache.clear()
@@ -204,6 +210,12 @@ class SqliteTablesWindow(private val dbFile: VirtualFile) : TabbedChildView(), I
             } else {
                 cardLayout.show(tableContainerPanel, TABLE_CARD_DATA)
             }
+        }
+        viewModel.loadError.observe { message ->
+            if (message.isEmpty()) {
+                return@observe
+            }
+            Messages.showErrorDialog(this, message, PLUGIN_DISPLAY_NAME)
         }
     }
 
