@@ -5,15 +5,33 @@ import com.intellij.openapi.vfs.VirtualFile
 import java.sql.ResultSet
 import java.sql.Types
 
+/**
+ * JDBC-backed SQLite access for the plugin.
+ *
+ * **Exceptions:** [loadMetaData], [loadTables], and [loadTableData] throw [IllegalStateException] when
+ * the database cannot be opened. In this codebase they run only inside [io.reactivex.rxjava3.core.Observable.fromCallable]
+ * in the view models; RxJava catches that and forwards it to `subscribe(..., onError)`, which updates UI state — it does
+ * **not** become an uncaught exception on the IDE main thread. Any new direct caller must use `try/catch`, Rx, or [runCatching].
+ */
 object SqliteModel {
     const val NULL = "null"
     const val BLOB = "BLOB"
 
-    fun loadMetaData(file: VirtualFile) : SqliteMetadata {
-        val connection = ConnectionManager.createConnection(file)
+    private fun openConnectionOrThrow(file: VirtualFile) =
+        ConnectionManager.createConnection(file)
+            ?: throw IllegalStateException(
+                "Unable to open SQLite database \"${file.name}\". " +
+                    "The file may be locked, inaccessible, or not a valid SQLite database."
+            )
+
+    /**
+     * @throws IllegalStateException if the database file cannot be opened.
+     */
+    fun loadMetaData(file: VirtualFile): SqliteMetadata {
+        val connection = openConnectionOrThrow(file)
         val metadata = SqliteMetadata()
-        connection?.let {
-            val md = it.metaData
+        try {
+            val md = connection.metaData
             metadata.isValidSqliteDatabase = true
             metadata.version = md.databaseMajorVersion
             metadata.driverVersion = md.driverVersion
@@ -38,16 +56,20 @@ object SqliteModel {
                 tables.add(tb)
             }
             metadata.tables.addAll(tables)
+            return metadata
+        } finally {
+            ConnectionManager.disposeConnection(connection)
         }
-        ConnectionManager.disposeConnection(connection)
-        return metadata
     }
 
-    fun loadTables(file: VirtualFile) : List<String> {
-        val connection = ConnectionManager.createConnection(file)
-        val result = mutableListOf<String>()
-        connection?.let {
-            val resultSet = it.metaData.getTables(null, null, "%", null)
+    /**
+     * @throws IllegalStateException if the database file cannot be opened.
+     */
+    fun loadTables(file: VirtualFile): List<String> {
+        val connection = openConnectionOrThrow(file)
+        return try {
+            val result = mutableListOf<String>()
+            val resultSet = connection.metaData.getTables(null, null, "%", null)
             while (resultSet.next()) {
                 val table = resultSet.getString("TABLE_NAME")
                 val type = resultSet.getString("TABLE_TYPE")
@@ -55,18 +77,22 @@ object SqliteModel {
                     result.add(table)
                 }
             }
+            result
+        } finally {
+            ConnectionManager.disposeConnection(connection)
         }
-        ConnectionManager.disposeConnection(connection)
-        return result
     }
 
-    fun loadTableData(file: VirtualFile, tableName: String, pageCount: Int, page: Int) : DbTableInstance {
+    /**
+     * @throws IllegalStateException if the database file cannot be opened.
+     */
+    fun loadTableData(file: VirtualFile, tableName: String, pageCount: Int, page: Int): DbTableInstance {
         val columns = mutableListOf<DbColumn>()
         val rows = mutableListOf<DbRow>()
         var totalCount = 0
-        val connection = ConnectionManager.createConnection(file)
-        connection?.let {
-            val columnResult = it.metaData.getColumns(null, null, tableName, null)
+        val connection = openConnectionOrThrow(file)
+        try {
+            val columnResult = connection.metaData.getColumns(null, null, tableName, null)
             while (columnResult.next()) {
                 val columnName = columnResult.getString("COLUMN_NAME")
                 val type = columnResult.getInt("DATA_TYPE")
@@ -75,7 +101,7 @@ object SqliteModel {
                 columns.add(DbColumn(columnName, type, typeName, schema))
             }
 
-            val statement = it.createStatement()
+            val statement = connection.createStatement()
             val rowResult = statement.executeQuery("SELECT * FROM \"$tableName\" LIMIT $pageCount OFFSET ${pageCount * (page - 1)}")
             val rowMeta = rowResult.metaData
             while (rowResult.next()) {
@@ -100,9 +126,10 @@ object SqliteModel {
             val countResult = statement.executeQuery("SELECT COUNT(*) FROM \"$tableName\"")
             countResult.next()
             totalCount = countResult.getInt(1)
+            return DbTableInstance(columns, rows, rows.size, page, totalCount)
+        } finally {
+            ConnectionManager.disposeConnection(connection)
         }
-        ConnectionManager.disposeConnection(connection)
-        return DbTableInstance(columns, rows, rows.size, page, totalCount)
     }
 
     private fun getAllSchema(resultSet: ResultSet): String {
