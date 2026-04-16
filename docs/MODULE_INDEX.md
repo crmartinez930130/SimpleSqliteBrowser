@@ -7,7 +7,7 @@
 | 路径 | 说明 |
 |------|------|
 | `src/main/kotlin/.../provider/` | 文件编辑器接入：何时打开自定义编辑器、编辑器生命周期 |
-| `src/main/kotlin/.../sqlite/` | 语言与文件类型注册（`plugin.xml` 与 `SqliteFileType`） |
+| `src/main/kotlin/.../sqlite/` | 语言与文件类型、`SqliteFileDetector`（扩展名 + 文件头识别） |
 | `src/main/kotlin/.../model/` | JDBC 连接与读库（`SqliteModel`、`ConnectionManager`） |
 | `src/main/kotlin/.../data/` | 表格/元数据等纯数据结构 |
 | `src/main/kotlin/.../mvvm/` | 极简 `LiveData`、`ViewModel`（含 `dispose()` 约定） |
@@ -18,9 +18,9 @@
 | `tablefilter/` | 内嵌的列过滤 UI 库（coderazzi） |
 | `src/main/resources/META-INF/plugin.xml` | 插件 ID、依赖、`fileType`、`fileEditorProvider` |
 
-## 核心数据流（打开 `.db`）
+## 核心数据流（打开 SQLite 库）
 
-1. `SqliteEditorProvider.accept` → `SqliteEditor` → `SqliteBrowserMainWindow`
+1. `SqliteEditorProvider.accept`：扩展名为 `db` / `sqlite` / `sqlite3` 时直接接受；否则在文件有效、非目录、长度在探测上限内时读取文件头 16 字节，匹配 `SQLite format 3\0` 则接受（见 `sqlite/SqliteFileDetector`）→ `SqliteEditor` → `SqliteBrowserMainWindow`
 2. `SqliteBrowserMainWindow` 持有两个 `TabbedChildView`：`SqliteTablesWindow`、`SqliteMetaDataWindow`
 3. 表格：`TableViewModel` 通过 `SqliteModel` + `ConnectionManager` 异步读表名与分页数据；错误经 `loadError` → `Messages.showErrorDialog`
 4. 元数据：`MetadataViewModel` 异步读 `SqliteMetadata`；错误同样经 `loadError`
@@ -34,7 +34,7 @@
 
 ## 常量
 
-- `Constants.kt`：`EXTENSION` / `PLUGIN_DISPLAY_NAME` 等与插件全局相关的字符串。
+- `Constants.kt`：`EXTENSION` / `EXTENSION_SQLITE` / `EXTENSION_SQLITE3` / `PLUGIN_DISPLAY_NAME` 等与插件全局相关的字符串。
 
 ## 构建注意
 

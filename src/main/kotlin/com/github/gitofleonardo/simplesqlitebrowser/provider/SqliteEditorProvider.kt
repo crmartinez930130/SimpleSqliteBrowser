@@ -1,8 +1,7 @@
 package com.github.gitofleonardo.simplesqlitebrowser.provider
 
-import com.github.gitofleonardo.simplesqlitebrowser.EXTENSION
-import com.github.gitofleonardo.simplesqlitebrowser.EXTENSION_SQLITE
 import com.github.gitofleonardo.simplesqlitebrowser.SQLITE_LANGUAGE
+import com.github.gitofleonardo.simplesqlitebrowser.sqlite.SqliteFileDetector
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorPolicy
 import com.intellij.openapi.fileEditor.FileEditorProvider
@@ -13,7 +12,7 @@ import com.intellij.openapi.vfs.VirtualFile
 
 class SqliteEditorProvider : FileEditorProvider, DumbAware {
     override fun accept(project: Project, file: VirtualFile): Boolean {
-        return file.extension == EXTENSION || file.extension == EXTENSION_SQLITE
+        return SqliteFileDetector.shouldOpenWithSqliteEditor(file)
     }
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
