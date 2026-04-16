@@ -1,7 +1,8 @@
 package com.github.gitofleonardo.simplesqlitebrowser
 
 const val SQLITE_LANGUAGE = "sqlite"
-const val MINE_TYPE = "db"
+/** Second argument to IntelliJ [com.intellij.lang.Language] for this dialect. */
+const val MIME_TYPE = "db"
 
 /** Title for error dialogs and similar UI. */
 const val PLUGIN_DISPLAY_NAME = "SimpleSqliteBrowser"

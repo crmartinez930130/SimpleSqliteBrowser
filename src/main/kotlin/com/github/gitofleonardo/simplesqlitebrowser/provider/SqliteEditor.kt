@@ -15,11 +15,11 @@ private const val NAME = "SqliteEditor"
 
 private val LOG = Logger.getInstance(SqliteEditor::class.java)
 
-class SqliteEditor(private val proj: Project, private val dbFile: VirtualFile) : UserDataHolderBase(), FileEditor {
+class SqliteEditor(private val project: Project, private val dbFile: VirtualFile) : UserDataHolderBase(), FileEditor {
     private val mainWindow = SqliteBrowserMainWindow(dbFile)
 
     init {
-        LOG.info("SQLite editor opened: ${dbFile.path} (project=${proj.name})")
+        LOG.info("SQLite editor opened: ${dbFile.path} (project=${project.name})")
     }
 
     override fun dispose() {

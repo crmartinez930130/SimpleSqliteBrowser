@@ -21,7 +21,7 @@
 ## 核心数据流（打开 SQLite 库）
 
 1. `SqliteEditorProvider.accept`：扩展名为 `db` / `sqlite` / `sqlite3` 时直接接受；否则在文件有效、非目录、长度在探测上限内时读取文件头 16 字节，匹配 `SQLite format 3\0` 则接受（见 `sqlite/SqliteFileDetector`）→ `SqliteEditor` → `SqliteBrowserMainWindow`
-2. `SqliteBrowserMainWindow` 持有两个 `TabbedChildView`：`SqliteTablesWindow`、`SqliteMetaDataWindow`
+2. `SqliteBrowserMainWindow` 持有两个 `TabbedChildView`：`SqliteTablesWindow`、`SqliteMetadataWindow`
 3. 表格：`TableViewModel` 通过 `SqliteModel` + `ConnectionManager` 异步读表名与分页数据；错误经 `loadError` → `Messages.showErrorDialog`
 4. 元数据：`MetadataViewModel` 异步读 `SqliteMetadata`；错误同样经 `loadError`
 5. 连接失败：`ConnectionManager` 返回 `null` 时，`SqliteModel.openConnectionOrThrow` 抛出 `IllegalStateException`，由 Rx `onError` 转为 `loadError`，避免静默空列表。
@@ -39,6 +39,7 @@
 ## 构建注意
 
 - `build.gradle.kts` 中可能关闭 `buildSearchableOptions`（Android Studio 无头构建与 Android 插件初始化顺序问题）。详见构建注释。
+- 根目录 `.editorconfig`：Kotlin / XML 等的基础缩进与换行约定。
 
 ## 测试
 

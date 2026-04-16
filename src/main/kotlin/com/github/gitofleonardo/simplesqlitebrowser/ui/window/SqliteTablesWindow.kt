@@ -1,12 +1,16 @@
 package com.github.gitofleonardo.simplesqlitebrowser.ui.window
 
-import com.github.gitofleonardo.simplesqlitebrowser.*
+import com.github.gitofleonardo.simplesqlitebrowser.PLUGIN_DISPLAY_NAME
+import com.github.gitofleonardo.simplesqlitebrowser.addOnItemChangeListener
+import com.github.gitofleonardo.simplesqlitebrowser.addOnKeyPressedListener
 import com.github.gitofleonardo.simplesqlitebrowser.data.DbRow
 import com.github.gitofleonardo.simplesqlitebrowser.data.DbTableInstance
 import com.github.gitofleonardo.simplesqlitebrowser.tools.DatabaseTableCellRenderer
 import com.github.gitofleonardo.simplesqlitebrowser.tools.DatabaseTableModel
 import com.github.gitofleonardo.simplesqlitebrowser.ui.TabbedChildView
 import com.github.gitofleonardo.simplesqlitebrowser.ui.view.BeeplessFormattedTextView
+import com.github.gitofleonardo.simplesqlitebrowser.toSizeString
+import com.github.gitofleonardo.simplesqlitebrowser.toStringOr
 import com.github.gitofleonardo.simplesqlitebrowser.ui.viewmodel.TableViewModel
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.Messages
@@ -35,6 +39,7 @@ import java.text.NumberFormat
 import java.util.Base64
 import javax.imageio.ImageIO
 import javax.swing.*
+import javax.swing.event.ListSelectionListener
 import javax.swing.table.TableColumn
 import javax.swing.text.NumberFormatter
 
@@ -113,9 +118,9 @@ class SqliteTablesWindow(private val dbFile: VirtualFile) : TabbedChildView(), I
     private var imageZoomPercent: Int = 100
 
     init {
-        setupUI()
+        setupUi()
         initListeners()
-        initObservers()
+        bindViewModel()
         viewModel.loadTables()
     }
 
@@ -125,12 +130,12 @@ class SqliteTablesWindow(private val dbFile: VirtualFile) : TabbedChildView(), I
     }
 
     private fun initListeners() {
-        tableComboBox.addOnItemChangeListener {
+        tableComboBox.addOnItemChangeListener { selected ->
             filterHeaderCache.clear()
-            viewModel.resetTableData(it as String)
+            viewModel.resetTableData(selected as String)
         }
-        pageInputField.addOnKeyEventListener {
-            if (it.keyCode == KeyEvent.VK_ENTER) {
+        pageInputField.addOnKeyPressedListener { e ->
+            if (e.keyCode == KeyEvent.VK_ENTER) {
                 val page = pageInputField.value as Int
                 viewModel.loadPage(page)
             }
@@ -160,27 +165,40 @@ class SqliteTablesWindow(private val dbFile: VirtualFile) : TabbedChildView(), I
         saveBlobButton.addActionListener {
             saveCurrentBlobToLocal()
         }
-        zoomOutButton.addActionListener {
-            if (currentZoomSourceImage == null) return@addActionListener
-            imageZoomPercent = (imageZoomPercent - IMAGE_ZOOM_STEP_PERCENT).coerceAtLeast(IMAGE_ZOOM_MIN_PERCENT)
-            applyImageZoom()
-        }
-        zoomInButton.addActionListener {
-            if (currentZoomSourceImage == null) return@addActionListener
-            imageZoomPercent = (imageZoomPercent + IMAGE_ZOOM_STEP_PERCENT).coerceAtMost(IMAGE_ZOOM_MAX_PERCENT)
-            applyImageZoom()
-        }
+        bindImageZoomActions()
+        installTableSelectionTracking()
+    }
+
+    private fun bindImageZoomActions() {
+        zoomOutButton.addActionListener { nudgeImageZoom(-IMAGE_ZOOM_STEP_PERCENT) }
+        zoomInButton.addActionListener { nudgeImageZoom(IMAGE_ZOOM_STEP_PERCENT) }
         zoomResetButton.addActionListener {
             if (currentZoomSourceImage == null) return@addActionListener
             imageZoomPercent = 100
             applyImageZoom()
         }
-        dataTable.addOnTouchListener {
-            updateTableSelection()
-        }
     }
 
-    private fun initObservers() {
+    private fun nudgeImageZoom(deltaPercent: Int) {
+        if (currentZoomSourceImage == null) return
+        imageZoomPercent = (imageZoomPercent + deltaPercent).coerceIn(
+            IMAGE_ZOOM_MIN_PERCENT,
+            IMAGE_ZOOM_MAX_PERCENT
+        )
+        applyImageZoom()
+    }
+
+    private fun installTableSelectionTracking() {
+        val onSelectionChanged = ListSelectionListener { e ->
+            if (!e.valueIsAdjusting) {
+                updateTableSelection()
+            }
+        }
+        dataTable.selectionModel.addListSelectionListener(onSelectionChanged)
+        dataTable.columnModel.selectionModel.addListSelectionListener(onSelectionChanged)
+    }
+
+    private fun bindViewModel() {
         viewModel.tables.observe {
             tables.clear()
             tables.addAll(it)
@@ -438,7 +456,7 @@ class SqliteTablesWindow(private val dbFile: VirtualFile) : TabbedChildView(), I
     }
 
     // UI configuration begin {@
-    private fun setupUI() {
+    private fun setupUi() {
         rootPanel = JPanel()
         rootPanel.layout = GridLayoutManager(3, 1, Insets(0, 0, 0, 0),
             -1, -1)

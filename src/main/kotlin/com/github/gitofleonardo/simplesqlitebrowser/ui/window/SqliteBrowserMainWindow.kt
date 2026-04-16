@@ -12,7 +12,7 @@ class SqliteBrowserMainWindow(dbFile: VirtualFile) : JPanel(BorderLayout()) {
     private val dbFilePath = dbFile.path
     private val tabbedChildViews = arrayListOf(
         SqliteTablesWindow(dbFile),
-        SqliteMetaDataWindow(dbFile)
+        SqliteMetadataWindow(dbFile)
     )
     private val tabbedPane: JBTabbedPane = JBTabbedPane()
 
