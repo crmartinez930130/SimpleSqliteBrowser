@@ -2,6 +2,7 @@ package com.github.gitofleonardo.simplesqlitebrowser.provider
 
 import com.github.gitofleonardo.simplesqlitebrowser.SQLITE_LANGUAGE
 import com.github.gitofleonardo.simplesqlitebrowser.sqlite.SqliteFileDetector
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorPolicy
 import com.intellij.openapi.fileEditor.FileEditorProvider
@@ -11,8 +12,17 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 
 class SqliteEditorProvider : FileEditorProvider, DumbAware {
+    private val log = Logger.getInstance(SqliteEditorProvider::class.java)
+
     override fun accept(project: Project, file: VirtualFile): Boolean {
-        return SqliteFileDetector.shouldOpenWithSqliteEditor(file)
+        val ok = SqliteFileDetector.shouldOpenWithSqliteEditor(file)
+        if (ok) {
+            val reason =
+                if (SqliteFileDetector.isKnownSqliteExtension(file)) "known extension"
+                else "SQLite magic header"
+            log.debug("accept: ${file.path} ($reason)")
+        }
+        return ok
     }
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {

@@ -1,11 +1,15 @@
 package com.github.gitofleonardo.simplesqlitebrowser.ui.window
 
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.components.JBTabbedPane
 import java.awt.BorderLayout
 import javax.swing.JPanel
 
+private val LOG = Logger.getInstance(SqliteBrowserMainWindow::class.java)
+
 class SqliteBrowserMainWindow(dbFile: VirtualFile) : JPanel(BorderLayout()) {
+    private val dbFilePath = dbFile.path
     private val tabbedChildViews = arrayListOf(
         SqliteTablesWindow(dbFile),
         SqliteMetaDataWindow(dbFile)
@@ -18,9 +22,11 @@ class SqliteBrowserMainWindow(dbFile: VirtualFile) : JPanel(BorderLayout()) {
         }
 
         add(tabbedPane)
+        LOG.debug("SqliteBrowserMainWindow initialized: $dbFilePath")
     }
 
     fun dispose() {
+        LOG.debug("SqliteBrowserMainWindow disposing: $dbFilePath")
         for (child in tabbedChildViews) {
             child.dispose()
         }

@@ -1,6 +1,7 @@
 package com.github.gitofleonardo.simplesqlitebrowser.model
 
 import com.github.gitofleonardo.simplesqlitebrowser.data.*
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.vfs.VirtualFile
 import java.sql.ResultSet
 import java.sql.Types
@@ -17,6 +18,8 @@ object SqliteModel {
     const val NULL = "null"
     const val BLOB = "BLOB"
 
+    private val LOG = Logger.getInstance(SqliteModel::class.java)
+
     private fun openConnectionOrThrow(file: VirtualFile) =
         ConnectionManager.createConnection(file)
             ?: throw IllegalStateException(
@@ -28,6 +31,7 @@ object SqliteModel {
      * @throws IllegalStateException if the database file cannot be opened.
      */
     fun loadMetaData(file: VirtualFile): SqliteMetadata {
+        LOG.debug("loadMetaData: ${file.path}")
         val connection = openConnectionOrThrow(file)
         val metadata = SqliteMetadata()
         try {
@@ -56,6 +60,7 @@ object SqliteModel {
                 tables.add(tb)
             }
             metadata.tables.addAll(tables)
+            LOG.debug("loadMetaData done: ${file.path}, tables=${tables.size}")
             return metadata
         } finally {
             ConnectionManager.disposeConnection(connection)
@@ -66,6 +71,7 @@ object SqliteModel {
      * @throws IllegalStateException if the database file cannot be opened.
      */
     fun loadTables(file: VirtualFile): List<String> {
+        LOG.debug("loadTables: ${file.path}")
         val connection = openConnectionOrThrow(file)
         return try {
             val result = mutableListOf<String>()
@@ -77,6 +83,7 @@ object SqliteModel {
                     result.add(table)
                 }
             }
+            LOG.debug("loadTables done: ${file.path}, count=${result.size}")
             result
         } finally {
             ConnectionManager.disposeConnection(connection)
@@ -90,6 +97,7 @@ object SqliteModel {
         val columns = mutableListOf<DbColumn>()
         val rows = mutableListOf<DbRow>()
         var totalCount = 0
+        LOG.debug("loadTableData: ${file.path} table=$tableName page=$page pageSize=$pageCount")
         val connection = openConnectionOrThrow(file)
         try {
             val columnResult = connection.metaData.getColumns(null, null, tableName, null)
@@ -126,6 +134,9 @@ object SqliteModel {
             val countResult = statement.executeQuery("SELECT COUNT(*) FROM \"$tableName\"")
             countResult.next()
             totalCount = countResult.getInt(1)
+            LOG.debug(
+                "loadTableData done: ${file.path} table=$tableName rows=${rows.size} totalCount=$totalCount"
+            )
             return DbTableInstance(columns, rows, rows.size, page, totalCount)
         } finally {
             ConnectionManager.disposeConnection(connection)

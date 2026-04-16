@@ -1,6 +1,7 @@
 package com.github.gitofleonardo.simplesqlitebrowser.provider
 
 import com.github.gitofleonardo.simplesqlitebrowser.ui.window.SqliteBrowserMainWindow
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorLocation
 import com.intellij.openapi.fileEditor.FileEditorState
@@ -12,10 +13,17 @@ import javax.swing.JComponent
 
 private const val NAME = "SqliteEditor"
 
+private val LOG = Logger.getInstance(SqliteEditor::class.java)
+
 class SqliteEditor(private val proj: Project, private val dbFile: VirtualFile) : UserDataHolderBase(), FileEditor {
     private val mainWindow = SqliteBrowserMainWindow(dbFile)
 
+    init {
+        LOG.info("SQLite editor opened: ${dbFile.path} (project=${proj.name})")
+    }
+
     override fun dispose() {
+        LOG.info("SQLite editor disposed: ${dbFile.path}")
         mainWindow.dispose()
     }
 

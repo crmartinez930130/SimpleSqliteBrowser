@@ -82,6 +82,7 @@ class TableViewModel(private val dbFile: VirtualFile) : ViewModel {
     }
 
     private fun loadTableData(file: VirtualFile, tableName: String, pageCount: Int, page: Int) {
+        LOG.debug("loadTableData async: ${file.path} table=$tableName page=$page pageSize=$pageCount")
         increaseLoading()
         val d = Observable
             .fromCallable { model.loadTableData(file, tableName, pageCount, page) }
@@ -96,10 +97,13 @@ class TableViewModel(private val dbFile: VirtualFile) : ViewModel {
                         totalPages = ceil(totalCount.toFloat() / pageCount).toInt()
                         tableData.value = result
                         loadError.value = ""
+                        LOG.debug(
+                            "loadTableData success: ${file.path} table=$tableName rows=${result.rows.size} total=${result.totalCount}"
+                        )
                     }
                 },
                 { error ->
-                    LOG.warn(error)
+                    LOG.warn("loadTableData failed: ${file.path} table=$tableName page=$page", error)
                     runOnEdtIfAlive {
                         loadError.value = error.message ?: error.toString()
                     }
@@ -109,6 +113,7 @@ class TableViewModel(private val dbFile: VirtualFile) : ViewModel {
     }
 
     fun loadTables() {
+        LOG.debug("loadTables async: ${dbFile.path}")
         increaseLoading()
         val d = Observable
             .fromCallable { model.loadTables(dbFile) }
@@ -121,10 +126,11 @@ class TableViewModel(private val dbFile: VirtualFile) : ViewModel {
                     runOnEdtIfAlive {
                         tables.value = tbls
                         loadError.value = ""
+                        LOG.debug("loadTables success: ${dbFile.path} count=${tbls.size}")
                     }
                 },
                 { error ->
-                    LOG.warn(error)
+                    LOG.warn("loadTables failed: ${dbFile.path}", error)
                     runOnEdtIfAlive {
                         loadError.value = error.message ?: error.toString()
                     }

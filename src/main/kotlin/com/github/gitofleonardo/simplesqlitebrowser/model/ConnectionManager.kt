@@ -14,6 +14,7 @@ object ConnectionManager {
     fun createConnection(file: VirtualFile): Connection? {
         return try {
             val connection = DriverManager.getConnection("jdbc:sqlite:${file.canonicalPath}")
+            LOG.debug("JDBC connection opened: ${file.path}")
             connection
         } catch (e: Exception) {
             LOG.warn("Failed to open SQLite connection for ${file.path}", e)

@@ -3,6 +3,7 @@ package com.github.gitofleonardo.simplesqlitebrowser.sqlite
 import com.github.gitofleonardo.simplesqlitebrowser.EXTENSION
 import com.github.gitofleonardo.simplesqlitebrowser.EXTENSION_SQLITE
 import com.github.gitofleonardo.simplesqlitebrowser.EXTENSION_SQLITE3
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.vfs.VirtualFile
 import java.io.IOException
 
@@ -13,6 +14,8 @@ import java.io.IOException
  * Otherwise the first 16 bytes are read and compared to the SQLite 3 file header (magic).
  */
 object SqliteFileDetector {
+    private val LOG = Logger.getInstance(SqliteFileDetector::class.java)
+
     private val SQLITE_HEADER = "SQLite format 3\u0000".toByteArray(Charsets.US_ASCII)
 
     private val KNOWN_EXTENSIONS = setOf(EXTENSION, EXTENSION_SQLITE, EXTENSION_SQLITE3)
@@ -40,7 +43,8 @@ object SqliteFileDetector {
                 val buf = stream.readNBytes(SQLITE_HEADER.size)
                 buf.contentEquals(SQLITE_HEADER)
             }
-        } catch (_: IOException) {
+        } catch (e: IOException) {
+            LOG.debug("SQLite header probe I/O error: ${file.path}", e)
             false
         }
     }

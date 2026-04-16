@@ -23,6 +23,7 @@ class MetadataViewModel : ViewModel {
     val loadError = LiveData<String>()
 
     fun loadMetaData(file: VirtualFile) {
+        LOG.debug("loadMetaData async: ${file.path}")
         val d = Observable
             .fromCallable { model.loadMetaData(file) }
             .subscribeOn(Schedulers.io())
@@ -32,11 +33,12 @@ class MetadataViewModel : ViewModel {
                         if (!disposed) {
                             metadata.value = result
                             loadError.value = ""
+                            LOG.debug("loadMetaData success: ${file.path} tables=${result.tables.size}")
                         }
                     }
                 },
                 { error ->
-                    LOG.warn(error)
+                    LOG.warn("loadMetaData failed: ${file.path}", error)
                     SwingUtilities.invokeLater {
                         if (!disposed) {
                             loadError.value = error.message ?: error.toString()
